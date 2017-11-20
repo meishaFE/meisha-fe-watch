@@ -1,0 +1,28 @@
+{
+  "compileOnSave": true,
+  "compilerOptions": {
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "target": "es5",
+    "sourceMap": false,
+    "removeComments": true,
+    "lib": [
+      "es6",
+      "es2015",
+      "dom",
+      "scripthost"
+    ],
+    "types": [
+      "node"
+    ],
+    "typeRoots": [
+      "node_modules/@types"
+    ]
+  },
+  "files": [
+    "index.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

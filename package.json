@@ -1,0 +1,37 @@
+{
+  "name": "meisha-fe-watch",
+  "version": "0.0.1",
+  "description": "Meisha front-end monitor to report the speed and errors of the web page.",
+  "main": "./dist/meisha-watch.js",
+  "scripts": {
+    "dev": "gulp watch",
+    "build": "gulp"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/meishaFE/meisha-fe-watch.git"
+  },
+  "keywords": [
+    "monitor",
+    "error",
+    "report",
+    "watch"
+  ],
+  "author": "iampomelo<iampomelo@foxmail.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/meishaFE/meisha-fe-watch/issues"
+  },
+  "homepage": "https://github.com/meishaFE/meisha-fe-watch#readme",
+  "devDependencies": {
+    "@types/node": "^8.0.53",
+    "browser-sync": "^2.18.13",
+    "browserify": "^14.5.0",
+    "gulp": "^3.9.1",
+    "gulp-rename": "^1.2.2",
+    "gulp-typescript": "^3.2.2",
+    "gulp-uglify": "^3.0.0",
+    "tslint": "^5.7.0",
+    "typescript": "^2.4.2"
+  }
+}
