@@ -4,8 +4,6 @@
  * Copyright (c) 2017 Meisha Technology
  */
 
-declare const exports: any;
-declare const module: any;
 declare const define: any;
 (function (root, factory) {
   if (typeof exports === 'object' && typeof module === 'object') {
