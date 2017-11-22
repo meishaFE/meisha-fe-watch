@@ -100,13 +100,13 @@ export default {
 }
 ```
 
-另外，在生产模式构建后``vue``的浏览器开发者工具``devtool``不可用，如果要快速开启，可在url参数加上devtools=true后刷新页面。
+另外，在生产模式构建后``Vue``的浏览器开发者工具``devtool``不可用，如果要快速开启，可在url参数加上devtools=true后刷新页面。
 
 
 
 ## 功能
 
-###v1.0.0
+### v1.0.0
 
 1. 收集``window.onerror``的错误信息，对于``Vue``，通过``Vue.config.errorHandler``收集；
 2. 代理``console``，收集打印的记录；

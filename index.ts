@@ -1,4 +1,3 @@
-import Timer = NodeJS.Timer;
 /**
  * 梅沙科技前端监控脚本 - MeishaFEWatch
  * Author: iampomelo <iampomelo@foxmail.com>
@@ -38,7 +37,7 @@ declare const define: any;
     private logs: object[]; // 追踪的记录
     private user: any = ''; // 用户信息
     private uniqueId: string = geneUniqueId(); // 本次访问的id
-    private timer: null | Timer = null; // 定时器id
+    private timer: any = null; // 定时器id
     private reportTimes: number = 0; // 已经上报的次数
 
     constructor() {
@@ -88,7 +87,7 @@ declare const define: any;
               }).join(','),
               url: window.location.href,
               type
-            }]]
+            }]];
           }
           method.apply(console, args);
         };
@@ -152,8 +151,8 @@ declare const define: any;
           document.addEventListener('visibilitychange', () => {
             this.report();
           });
-        } else if ((hidden = "webkitHidden") in document) {
-          document.addEventListener("webkitvisibilitychange", () => {
+        } else if ((hidden = 'webkitHidden') in document) {
+          document.addEventListener('webkitvisibilitychange', () => {
             this.report();
           });
         }
@@ -278,7 +277,7 @@ declare const define: any;
    */
   function geneUniqueId() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
-      let r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+      let r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
     });
   }
