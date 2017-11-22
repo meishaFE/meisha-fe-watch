@@ -1,6 +1,7 @@
+import Timer = NodeJS.Timer;
 /**
  * 梅沙科技前端监控脚本 - MeishaFEWatch
- * Author: pomelo <iampomelo@foxmail.com>
+ * Author: iampomelo <iampomelo@foxmail.com>
  * Copyright (c) 2017 Meisha Technology
  */
 
@@ -13,30 +14,55 @@ declare const define: any;
     define([], factory);
   }
   else if (typeof exports === 'object') {
-    exports['MeiShaWatch'] = factory();
+    exports['MeishaWatch'] = factory();
   }
   else {
-    root['MeiShaWatch'] = factory();
+    root['MeishaWatch'] = factory();
   }
 })(window, function () {
   const env = {
     wechat: !!navigator.userAgent.toLowerCase().match(/MicroMessenger/i),
+    iOS: !!navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/),
     dev: /127.0.0.1|192.168|localhost/.test(window.location.host)
   };
   interface Settings {
     isReport: boolean; // 是否上报信息
     reportURL: string; // 接收错误信息接口的URL
-    projectName: string; // 项目名
-    moduleName?: string; // 模块名
+    projectId: string; // 项目id
+    partitionId: string; // 模块id
   }
 
-  class MeiShaWatch {
-    private settings: Settings;
-    private logs: object[];
-    private user: any = '';
+  class MeishaWatch {
+    private settings: Settings; // 配置选项
+    private _logs: object[] = []; // 实际的记录
+    private logs: object[]; // 追踪的记录
+    private user: any = ''; // 用户信息
+    private uniqueId: string = geneUniqueId(); // 本次访问的id
+    private timer: null | Timer = null; // 定时器id
+    private reportTimes: number = 0; // 已经上报的次数
 
     constructor() {
-      this.logs = [];
+      if (env.iOS) {
+        Object.defineProperty(this, 'logs', {
+          value: [],
+          configurable: true,
+          enumerable: true,
+          writable: true
+        });
+        Object.defineProperty(this, 'logs', {
+          get() {
+            return this._logs;
+          },
+          set(value) {
+            this._logs = value;
+            if (value.length) {
+              this.checkLogs();
+            }
+          }
+        });
+      } else {
+        this.logs = [];
+      }
       this.agentConsole();
       this.agentAJAX();
       this.configSender();
@@ -55,12 +81,14 @@ declare const define: any;
       methodList.forEach(type => {
         const method = console[type];
         console[type] = (...args) => {
-          if (args.length && args[0] !== '[MeiShaWatch Console]') {
-            this.logs.push({
-              msg: args.map(v => JSON.stringify(v)).join(','),
+          if (args.length && args[0] !== '[MeishaWatch Console]') {
+            this.logs = [...this.logs, ...[{
+              msg: args.map(v => {
+                return (typeof v === 'object') ? JSON.stringify(v) : v;
+              }).join(','),
               url: window.location.href,
               type
-            });
+            }]]
           }
           method.apply(console, args);
         };
@@ -80,11 +108,11 @@ declare const define: any;
           };
         req.onreadystatechange = function () {
           if (req.readyState === 4 && req.status >= 400) {
-            msw.logs.push({
+            msw.logs = [...msw.logs, ...[{
               msg: `${method} ${url} ${req.status}`,
               url: window.location.href,
               type: 'error'
-            });
+            }]];
           }
           return onreadystatechange.apply(req, arguments);
         };
@@ -101,13 +129,13 @@ declare const define: any;
         if (error && error.stack) {
           errMsg = processStackMsg(error);
         }
-        this.logs.push({
+        this.logs = [...this.logs, ...[{
           msg: errMsg.substr(0, 500),
           url: window.location.href,
           type: 'error',
           line,
           col
-        });
+        }]];
       };
     }
 
@@ -115,9 +143,21 @@ declare const define: any;
      * 发送性能和错误信息至后端
      */
     configSender(): void {
-      window.onunload = (): void => {
+      window.addEventListener('unload', () => {
         this.report();
-      };
+      });
+      if (env.wechat) {
+        let hidden = 'hidden';
+        if (hidden in document) {
+          document.addEventListener('visibilitychange', () => {
+            this.report();
+          });
+        } else if ((hidden = "webkitHidden") in document) {
+          document.addEventListener("webkitvisibilitychange", () => {
+            this.report();
+          });
+        }
+      }
     }
 
     /**
@@ -130,11 +170,12 @@ declare const define: any;
 
     /**
      * 发送请求，错误上报
+     * @param async 是否异步请求上报（默认为false，同步请求上报）
      */
-    public report(): void {
-      let {reportURL, projectName, moduleName, isReport = true} = this.settings;
-      if (isReport) {
-        if (reportURL && projectName) {
+    public report(async: boolean = false): void {
+      let {reportURL, projectId, partitionId, isReport = true} = this.settings;
+      if (isReport && this.reportTimes < 20) {
+        if (reportURL && projectId && partitionId) {
           const performance = window.performance;
           const times = {
             loadPage: -1, // 页面加载完成的时间
@@ -147,17 +188,20 @@ declare const define: any;
             times.domReady = t.domComplete - t.responseEnd;
             times.loadRes = t.responseEnd - t.requestStart;
           }
+          const user = (typeof this.user === 'number' || typeof this.user === 'string') ? this.user : JSON.stringify(this.user);
+          const logs = JSON.stringify(this.logs.slice());
+          this.logs = [];
           AJAX(reportURL, 'POST', {
-            projectName,
-            moduleName: moduleName || '',
-            logs: JSON.stringify(this.logs),
+            projectId,
+            partitionId,
+            logs,
             times: JSON.stringify(times),
-            ua: window.navigator.userAgent,
-            user: JSON.stringify(this.user),
-            uniqueId: geneUniqueId()
-          }, () => {
+            user,
+            uniqueId: this.uniqueId
+          }, async, () => {
           }, () => {
           });
+          this.reportTimes++;
         }
       }
     }
@@ -167,28 +211,27 @@ declare const define: any;
      * @returns {object}
      */
     public useVue(): object {
-      const watch = this;
+      const msw = this;
       return {
         install(Vue): void {
           const ver: string[] = Vue.version && Vue.version.split('.') || [];
           if (+ver[0] >= 2 && +ver[1] >= 2) {
             Vue.config.errorHandler = (err, vm, info) => {
               if (env.dev) {
-                console.error('[MeiShaWatch Console]:', err);
-              } else {
-                let errMsg: string = err ? (err.stack ? processStackMsg(err) : err) : '';
-                if (info) {
-                  errMsg = `[Info: ${info}]->${errMsg}`;
-                }
-                if (vm && vm.$options && vm.$options.name) {
-                  errMsg = `[Component Name: ${vm.$options.name}]->${errMsg}`;
-                }
-                watch.logs.push({
-                  msg: errMsg,
-                  url: window.location.href,
-                  type: 'error'
-                });
+                console.error('[MeishaWatch Console]', err);
               }
+              let errMsg: string = err ? (err.stack ? processStackMsg(err) : err) : '';
+              if (info) {
+                errMsg = `[Info: ${info}]->${errMsg}`;
+              }
+              if (vm && vm.$options && vm.$options.name) {
+                errMsg = `[Component Name: ${vm.$options.name}]->${errMsg}`;
+              }
+              msw.logs = [...msw.logs, ...[{
+                msg: errMsg,
+                url: window.location.href,
+                type: 'error'
+              }]];
             };
           }
           if (getQueryString('devtools')) {
@@ -196,6 +239,17 @@ declare const define: any;
           }
         }
       };
+    }
+
+    checkLogs(): void {
+      clearTimeout(this.timer);
+      if (this.logs.length >= 10) {
+        this.report(true);
+      } else {
+        this.timer = setTimeout(() => {
+          this.report(true);
+        }, 3000);
+      }
     }
   }
 
@@ -259,21 +313,22 @@ declare const define: any;
    * @param url 请求地址
    * @param method 请求方法
    * @param data 请求参数
+   * @param async 是否是异步请求
    * @param successCb 成功回调
    * @param errorCb 错误回调
    * @constructor
    */
-  function AJAX(url: string, method: string, data: object, successCb, errorCb): void {
+  function AJAX(url: string, method: string, data: object, async: boolean, successCb, errorCb): void {
     const xhr = new XMLHttpRequest();
     xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
         ((xhr.status === 200) ? successCb : errorCb)(JSON.parse(xhr.responseText));
       }
     };
-    xhr.open(method, method.toUpperCase() === 'GET' ? (url + '?' + toDataString(data)) : url, true);
+    xhr.open(method, method.toUpperCase() === 'GET' ? (url + '?' + toDataString(data)) : url, async);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.send(toDataString(data));
   }
 
-  return new MeiShaWatch();
+  return new MeishaWatch();
 });
