@@ -47,8 +47,8 @@ const MeishaWatch = require('meisha-fe-watch');
 MeishaWatch.init({
   isReport: true, // 是否向后端提交MeishaWatch收集信息，默认为true，可自行检测当前环境，在开发、测试、预发布环境关闭，如：isReport: !/127.0.0.1|192.168|localhost|test-|pre-/.test(window.location.host)
   reportURL: '/path/to/report', // 向后端提交MeishaWatch收集信息的URL(必填，否则无法提交)
-  projectId: 'project id', // 日志系统生成的项目id(必填，否则无法提交)
-  partitionId: 'partition id' // 日志系统生成的模块id(必填，否则无法提交)
+  projectId: 'project id', // 日志系统生成的项目id(已改为项目名称，必填，否则无法提交)
+  partitionId: 'partition id' // 日志系统生成的模块id(已改为日志分区名称，必填，否则无法提交)
 });
 ```
 
@@ -78,7 +78,7 @@ MeishaWatch.setUser(userId); // userId可替换为任一能识别用户身份的
 
 对于PC端与Android端，``MeishaWatch``默认在页面关闭后上报所有错误信息；在iOS端，因为iOS的Safari（包括在微信中）无法触发``unload``、``beforeunload``和``visibilitychange``等事件，无法在页面关闭前上报，所以会在一段时间内累计错误信息(触发条件：3秒内无增加错误信息||错误已超过10条)后实时上报，并且一个访问最多上报20次，减少了频繁调用上报接口。
 
-``MeishaWatch``会自动进行错误上报，使用时无需关注细节。如果需要主动上报，可调用``report``方法。
+``MeishaWatch``会自动进行错误上报，使用时无需关注细节。如果需要主动上报，可调用``report``方法。
 
 ```javascript
 MeishaWatch.report();
@@ -104,17 +104,23 @@ export default {
 
 
 
-## 功能
+## 更新日志
 
 ### v1.0.0
 
-1. 收集``window.onerror``的错误信息，对于``Vue``，通过``Vue.config.errorHandler``收集；
-2. 代理``console``，收集打印的记录；
-3. 代理``XMLHTTPRequest``，收集AJAX出错信息；
-4. 通过``performance``接口收集性能信息，如页面加载完成的时间，解析DOM树结构的时间，请求资源的时间。
+1. 新增收集``window.onerror``的错误信息，对于``Vue``，通过``Vue.config.errorHandler``收集；
 
+2. 新增代理``console``，收集打印的记录；
 
+3. 新增代理``XMLHTTPRequest``，收集AJAX出错信息；
 
+4. 新增通过``performance``接口收集性能信息，如页面加载完成的时间，解析DOM树结构的时间，请求资源的时间。
+
+###v1.0.1
+
+1. 修复在部分Android设备微信浏览器中偶现``NetworkError: Failed to execute 'send' on 'XMLHttpRequest'``的错误，将错误上报改为异步请求。
+
+   ​
 
 ## 兼容性
 

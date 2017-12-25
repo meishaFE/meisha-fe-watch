@@ -22,6 +22,7 @@ declare const define: any;
   const env = {
     wechat: !!navigator.userAgent.toLowerCase().match(/MicroMessenger/i),
     iOS: !!navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/),
+    Android: !!navigator.userAgent.match(/Android/i),
     dev: /127.0.0.1|192.168|localhost/.test(window.location.host)
   };
   interface Settings {
@@ -143,17 +144,17 @@ declare const define: any;
      */
     configSender(): void {
       window.addEventListener('unload', () => {
-        this.report();
+        this.report(env.wechat && env.Android); // Android微信中只能是异步请求
       });
-      if (env.wechat) {
+      if (env.wechat && env.Android) {
         let hidden = 'hidden';
         if (hidden in document) {
           document.addEventListener('visibilitychange', () => {
-            this.report();
+            this.report(true);
           });
         } else if ((hidden = 'webkitHidden') in document) {
           document.addEventListener('webkitvisibilitychange', () => {
-            this.report();
+            this.report(true);
           });
         }
       }
