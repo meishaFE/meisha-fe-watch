@@ -116,7 +116,7 @@ export default {
 
 4. 新增通过``performance``接口收集性能信息，如页面加载完成的时间，解析DOM树结构的时间，请求资源的时间。
 
-###v1.0.1
+### v1.0.1
 
 1. 修复在部分Android设备微信浏览器中偶现``NetworkError: Failed to execute 'send' on 'XMLHttpRequest'``的错误，将错误上报改为异步请求。
 
