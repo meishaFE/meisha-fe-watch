@@ -120,7 +120,13 @@ export default {
 
 1. 修复在部分Android设备微信浏览器中偶现``NetworkError: Failed to execute 'send' on 'XMLHttpRequest'``的错误，将错误上报改为异步请求。
 
-   ​
+
+### v1.0.2
+
+1. 将Android设备错误上报改回同步请求。
+2. 修复对循环引用对象做JSON.stringify操作时``TypeError: Converting circular structure to JSON``的错误。
+
+
 
 ## 兼容性
 

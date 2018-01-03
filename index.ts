@@ -1,5 +1,5 @@
 /**
- * 梅沙科技前端监控脚本 - MeishaFEWatch
+ * 梅沙科技前端监控脚本 - MeishaFEWatch v1.0.2
  * Author: iampomelo <iampomelo@foxmail.com>
  * Copyright (c) 2017 Meisha Technology
  */
@@ -33,8 +33,13 @@ declare const define: any;
   }
 
   class MeishaWatch {
-    private settings: Settings; // 配置选项
-    private _logs: object[] = []; // 实际的记录
+    private settings: Settings = {
+      isReport: true,
+      reportURL: '',
+      projectId: '',
+      partitionId: ''
+    }; // 配置选项
+    private __logs: object[] = []; // 实际的记录
     private logs: object[]; // 追踪的记录
     private user: any = ''; // 用户信息
     private uniqueId: string = geneUniqueId(); // 本次访问的id
@@ -51,10 +56,10 @@ declare const define: any;
         });
         Object.defineProperty(this, 'logs', {
           get() {
-            return this._logs;
+            return this.__logs;
           },
           set(value) {
-            this._logs = value;
+            this.__logs = value;
             if (value.length) {
               this.checkLogs();
             }
@@ -84,7 +89,7 @@ declare const define: any;
           if (args.length && args[0] !== '[MeishaWatch Console]') {
             this.logs = [...this.logs, ...[{
               msg: args.map(v => {
-                return (typeof v === 'object') ? JSON.stringify(v) : v;
+                return (typeof v === 'object') ? JSON.stringify(decycle(v, undefined)) : v;
               }).join(','),
               url: window.location.href,
               type
@@ -143,19 +148,28 @@ declare const define: any;
      * 发送性能和错误信息至后端
      */
     configSender(): void {
+      if (env.iOS) {
+        window.addEventListener('load', () => {
+          this.report(true);
+        }, false);
+      }
       window.addEventListener('unload', () => {
-        this.report(env.wechat && env.Android); // Android微信中只能是异步请求
-      });
+        this.report(false);
+      }, false);
       if (env.wechat && env.Android) {
         let hidden = 'hidden';
         if (hidden in document) {
           document.addEventListener('visibilitychange', () => {
-            this.report(true);
-          });
+            if (document[hidden]) {
+              this.report(false);
+            }
+          }, false);
         } else if ((hidden = 'webkitHidden') in document) {
           document.addEventListener('webkitvisibilitychange', () => {
-            this.report(true);
-          });
+            if (document[hidden]) {
+              this.report(false);
+            }
+          }, false);
         }
       }
     }
@@ -170,38 +184,44 @@ declare const define: any;
 
     /**
      * 发送请求，错误上报
-     * @param async 是否异步请求上报（默认为false，同步请求上报）
+     * @param async 是否异步请求
      */
-    public report(async: boolean = false): void {
-      let {reportURL, projectId, partitionId, isReport = true} = this.settings;
-      if (isReport && this.reportTimes < 20) {
-        if (reportURL && projectId && partitionId) {
-          const performance = window.performance;
-          const times = {
-            loadPage: -1, // 页面加载完成的时间
-            domReady: -1, // 解析DOM树结构的时间
-            loadRes: -1 // 请求资源的时间
-          };
-          if (performance) {
-            const t = performance.timing;
-            times.loadPage = t.loadEventEnd - t.navigationStart;
-            times.domReady = t.domComplete - t.responseEnd;
-            times.loadRes = t.responseEnd - t.requestStart;
+    public report(async: boolean = true): void {
+      if (this.settings) {
+        let {reportURL, projectId, partitionId, isReport = true} = this.settings;
+        if (isReport && this.reportTimes < 20) {
+          if (reportURL && projectId && partitionId) {
+            const performance = window.performance;
+            const times = {
+              loadPage: -1, // 页面加载完成的时间
+              domReady: -1, // 解析DOM树结构的时间
+              loadRes: -1 // 请求资源的时间
+            };
+            if (performance) {
+              const t = performance.timing;
+              times.loadPage = t.loadEventEnd - t.navigationStart;
+              times.domReady = t.domComplete - t.responseEnd;
+              times.loadRes = t.responseEnd - t.requestStart;
+            }
+            const user = (isType(this.user, 'Number') || isType(this.user, 'String')) ? this.user : JSON.stringify(this.user);
+            const logs = JSON.stringify(decycle(this.logs.slice(), undefined));
+            this.logs = [];
+            try {
+              AJAX(reportURL, 'POST', {
+                projectId,
+                partitionId,
+                logs,
+                times: JSON.stringify(times),
+                user,
+                uniqueId: this.uniqueId
+              }, async, () => {
+              }, () => {
+              });
+            } catch (e) {
+            } finally {
+              this.reportTimes++;
+            }
           }
-          const user = (typeof this.user === 'number' || typeof this.user === 'string') ? this.user : JSON.stringify(this.user);
-          const logs = JSON.stringify(this.logs.slice());
-          this.logs = [];
-          AJAX(reportURL, 'POST', {
-            projectId,
-            partitionId,
-            logs,
-            times: JSON.stringify(times),
-            user,
-            uniqueId: this.uniqueId
-          }, async, () => {
-          }, () => {
-          });
-          this.reportTimes++;
         }
       }
     }
@@ -244,11 +264,9 @@ declare const define: any;
     checkLogs(): void {
       clearTimeout(this.timer);
       if (this.logs.length >= 10) {
-        this.report(true);
+        this.report();
       } else {
-        this.timer = setTimeout(() => {
-          this.report(true);
-        }, 3000);
+        this.timer = setTimeout(this.report, 3000);
       }
     }
   }
@@ -276,7 +294,7 @@ declare const define: any;
    * 生成唯一的id
    * @returns {string}
    */
-  function geneUniqueId() {
+  function geneUniqueId(): string {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       let r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
       return v.toString(16);
@@ -313,12 +331,12 @@ declare const define: any;
    * @param url 请求地址
    * @param method 请求方法
    * @param data 请求参数
-   * @param async 是否是异步请求
+   * @param async 是否异步请求（默认为true）
    * @param successCb 成功回调
    * @param errorCb 错误回调
    * @constructor
    */
-  function AJAX(url: string, method: string, data: object, async: boolean, successCb, errorCb): void {
+  function AJAX(url: string, method: string, data: object, async: boolean = true, successCb, errorCb): void {
     const xhr = new XMLHttpRequest();
     xhr.onreadystatechange = () => {
       if (xhr.readyState === 4) {
@@ -328,6 +346,64 @@ declare const define: any;
     xhr.open(method, method.toUpperCase() === 'GET' ? (url + '?' + toDataString(data)) : url, async);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
     xhr.send(toDataString(data));
+  }
+
+  /**
+   * 判断val是否为type类型的值
+   * @param val
+   * @param type 可能的值为Function, Object, Array, Number, String, RegExp, Null, Undefined, Boolean, Symbol, Date等
+   * @returns {boolean}
+   */
+  function isType(val: any, type: string): boolean {
+    if (type === 'Number' && Number.isNaN(val)) {
+      return false;
+    }
+    return toString.call(val).replace(/.*\s(.*)]$/, '$1') === type;
+  }
+
+  /**
+   * 去除循环引用
+   * @param object 待处理的对象
+   * @param replacer 对对象值遍历处理的方法
+   * @returns {object} 去除循环引用的对象
+   */
+  function decycle(object: object, replacer: ((value: any) => any) | undefined): object {
+
+    const obj2Path: WeakMap<any, string> = new WeakMap();
+
+    return (function derez(value: any, path: string) {
+      let oldPath: string;
+      let newObj: object;
+      if (replacer !== undefined) {
+        value = replacer(value);
+      }
+      if (typeof value === 'object' && value !== null &&
+        !(value instanceof Boolean) &&
+        !(value instanceof Date) &&
+        !(value instanceof Number) &&
+        !(value instanceof RegExp) &&
+        !(value instanceof String)) {
+        oldPath = obj2Path.get(value);
+        if (oldPath !== undefined) {
+          return {
+            $ref: oldPath
+          };
+        }
+        obj2Path.set(value, path);
+        if (Array.isArray(value)) {
+          newObj = value.map((v, i) => {
+            return derez(v, path + '[' + i + ']');
+          });
+        } else {
+          newObj = {};
+          Object.keys(value).forEach(key => {
+            newObj[key] = derez(value[key], path + '[' + key + ']');
+          });
+        }
+        return newObj;
+      }
+      return value;
+    }(object, '$'));
   }
 
   return new MeishaWatch();
