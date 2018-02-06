@@ -1,6 +1,6 @@
 # 梅沙科技前端监控脚本
 
-![version](https://img.shields.io/badge/meisha--fe--watch-1.0.2-brightgreen.svg)![license](https://img.shields.io/badge/license-MIT-blue.svg)![license](https://img.shields.io/badge/typescript-%3E=2.4.2-orange.svg)
+![version](https://img.shields.io/badge/meisha--fe--watch-1.0.2-brightgreen.svg)  ![license](https://img.shields.io/badge/license-MIT-blue.svg)  ![license](https://img.shields.io/badge/typescript-%3E=2.4.2-orange.svg)
 
 收集运行于浏览器端JS的错误信息、记录页面加载时间、记录AJAX出错信息并发送至后端统计与分析。
 
@@ -17,8 +17,6 @@
 4. ``npm run build``构建用于生产环境的``meisha-watch.js``。
 
    ​
-
-
 
 ## 使用方法
 
