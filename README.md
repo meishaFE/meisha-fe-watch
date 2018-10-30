@@ -131,7 +131,9 @@ export default {
 1. 将Android设备错误上报改回同步请求。
 2. 修复对循环引用对象做JSON.stringify操作时``TypeError: Converting circular structure to JSON``的错误。
 
+### v1.0.3
 
+1. 请求上报添加超时时长参数，默认为1s
 
 ## 兼容性
 
