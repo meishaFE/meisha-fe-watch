@@ -30,6 +30,7 @@ declare const define: any;
     reportURL: string; // 接收错误信息接口的URL
     projectId: string; // 项目id
     partitionId: string; // 模块id
+    outTime: Number; // 超时时长
   }
 
   class MeishaWatch {
@@ -37,6 +38,7 @@ declare const define: any;
       isReport: true,
       reportURL: '',
       projectId: '',
+      outTime: 1000,
       partitionId: ''
     }; // 配置选项
     private __logs: object[] = []; // 实际的记录
@@ -188,7 +190,7 @@ declare const define: any;
      */
     public report(async: boolean = true): void {
       if (this.settings) {
-        let {reportURL, projectId, partitionId, isReport = true} = this.settings;
+        let {reportURL, projectId, partitionId, isReport = true, outTime} = this.settings;
         if (isReport && this.reportTimes < 20) {
           if (reportURL && projectId && partitionId) {
             const performance = window.performance;
@@ -216,7 +218,7 @@ declare const define: any;
                 uniqueId: this.uniqueId
               }, async, () => {
               }, () => {
-              });
+              }, outTime);
             } catch (e) {
             } finally {
               this.reportTimes++;
@@ -334,11 +336,21 @@ declare const define: any;
    * @param async 是否异步请求（默认为true）
    * @param successCb 成功回调
    * @param errorCb 错误回调
+   * @param outTime 超时时长
    * @constructor
    */
-  function AJAX(url: string, method: string, data: object, async: boolean = true, successCb, errorCb): void {
+  function AJAX(url: string, method: string, data: object, async: boolean = true, successCb, errorCb, outTime: Number): void {
+    let isTimeOut = false; // 默认没超时
     const xhr = new XMLHttpRequest();
+    let timer = setTimeout(() => {
+      isTimeOut = true;
+      xhr.abort();
+    }, outTime);
     xhr.onreadystatechange = () => {
+      if (isTimeOut) {
+        return;
+      };
+      clearTimeout(timer);
       if (xhr.readyState === 4) {
         ((xhr.status === 200) ? successCb : errorCb)(JSON.parse(xhr.responseText));
       }
