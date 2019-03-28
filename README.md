@@ -52,8 +52,8 @@ const MeishaWatch = require('meisha-fe-watch');
 MeishaWatch.init({
   isReport: true, // 是否向后端提交MeishaWatch收集信息，默认为true，可自行检测当前环境，在开发、测试、预发布环境关闭，如：isReport: !/127.0.0.1|192.168|localhost|test-|pre-/.test(window.location.host)
   reportURL: '/path/to/report', // 向后端提交MeishaWatch收集信息的URL(必填，否则无法提交)
-  projectId: 'project id', // 日志系统生成的项目id(已改为项目名称，必填，否则无法提交)
-  partitionId: 'partition id' // 日志系统生成的模块id(已改为日志分区名称，必填，否则无法提交)
+  projectId: 'project id', // 日志系统设置的项目英文名（必填，否则无法提交）
+  partitionId: 'partition id' // 日志系统设置的分区英文名称（必填，否则无法提交)
 });
 ```
 
@@ -134,6 +134,13 @@ export default {
 ### v1.0.3
 
 1. 请求上报添加超时时长参数，默认为1s
+
+### v1.0.4
+
+1. 优化接口收集的性能信息，如：页面完全加载时间、HTML加载完成时间、首次渲染时间、DOM解析耗时、DNS解析耗时、网络请求耗时、数据传输耗时、首次可交互时间、首包时间、资源加载耗时。
+
+2. 设置iOS的初次上报延迟1.5s
+
 
 ## 兼容性
 
