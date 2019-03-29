@@ -224,16 +224,18 @@ declare const define: any;
               times.load = t.loadEventStart - t.fetchStart;
             }
             const user = (isType(this.user, 'Number') || isType(this.user, 'String')) ? this.user : JSON.stringify(this.user);
-            const logs = decycle(this.logs.slice(), undefined);
+            const logs = JSON.stringify(decycle(this.logs.slice(), undefined));
+            const httpHost = window.location.host;
+            const requestUri = window.location.pathname;
             this.logs = [];
             try {
               AJAX(reportURL, 'POST', {
                 projectId,
                 partitionId,
-                httpHost: window.location.host, // 上报接口新增字段
-                requestUri: window.location.pathname, // 上报接口新增字段
+                httpHost,
+                requestUri,
                 logs,
-                times: times,
+                times: JSON.stringify(times),
                 user,
                 uniqueId: this.uniqueId
               }, async, () => {
@@ -375,11 +377,9 @@ declare const define: any;
         ((xhr.status === 200) ? successCb : errorCb)(JSON.parse(xhr.responseText));
       }
     };
-    let urlSearchParams = new URLSearchParams(); // 修改上报数据形式
-    urlSearchParams.append('data', JSON.stringify(data));
     xhr.open(method, method.toUpperCase() === 'GET' ? (url + '?' + toDataString(data)) : url, async);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.send(urlSearchParams);
+    xhr.send(toDataString(data));
   }
 
   /**
