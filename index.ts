@@ -152,7 +152,9 @@ declare const define: any;
     configSender(): void {
       if (env.iOS) {
         window.addEventListener('load', () => {
-          this.report(true);
+          setTimeout(() => {
+            this.report(true);
+          }, 1500); // 设置iOS首次报警延时
         }, false);
       }
       window.addEventListener('unload', () => {
@@ -195,25 +197,43 @@ declare const define: any;
           if (reportURL && projectId && partitionId) {
             const performance = window.performance;
             const times = {
-              loadPage: -1, // 页面加载完成的时间
-              domReady: -1, // 解析DOM树结构的时间
-              loadRes: -1 // 请求资源的时间
+                dns: -1,
+                tcp: -1,
+                ttfb: -1,
+                trans: -1,
+                dom: -1,
+                res: -1,
+                firstbyte: -1,
+                fpt: -1,
+                tti: -1,
+                ready: -1,
+                load: -1,
             };
             if (performance) {
               const t = performance.timing;
-              times.loadPage = t.loadEventEnd - t.navigationStart;
-              times.domReady = t.domComplete - t.responseEnd;
-              times.loadRes = t.responseEnd - t.requestStart;
+              times.dns = t.domainLookupEnd - t.domainLookupStart;
+              times.tcp = t.connectEnd - t.connectStart;
+              times.ttfb = t.responseStart - t.requestStart;
+              times.trans = t.responseEnd - t.responseStart;
+              times.dom = t.domInteractive - t.responseEnd;
+              times.res = t.loadEventStart - t.domContentLoadedEventEnd;
+              times.firstbyte = t.responseStart - t.domainLookupStart;
+              times.fpt = t.responseEnd - t.fetchStart;
+              times.tti = t.domInteractive - t.fetchStart;
+              times.ready = t.domContentLoadedEventEnd - t.fetchStart;
+              times.load = t.loadEventStart - t.fetchStart;
             }
             const user = (isType(this.user, 'Number') || isType(this.user, 'String')) ? this.user : JSON.stringify(this.user);
-            const logs = JSON.stringify(decycle(this.logs.slice(), undefined));
+            const logs = decycle(this.logs.slice(), undefined);
             this.logs = [];
             try {
               AJAX(reportURL, 'POST', {
                 projectId,
                 partitionId,
+                httpHost: window.location.host, // 上报接口新增字段
+                requestUri: window.location.pathname, // 上报接口新增字段
                 logs,
-                times: JSON.stringify(times),
+                times: times,
                 user,
                 uniqueId: this.uniqueId
               }, async, () => {
@@ -355,9 +375,11 @@ declare const define: any;
         ((xhr.status === 200) ? successCb : errorCb)(JSON.parse(xhr.responseText));
       }
     };
+    let urlSearchParams = new URLSearchParams(); // 修改上报数据形式
+    urlSearchParams.append('data', JSON.stringify(data));
     xhr.open(method, method.toUpperCase() === 'GET' ? (url + '?' + toDataString(data)) : url, async);
     xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-    xhr.send(toDataString(data));
+    xhr.send(urlSearchParams);
   }
 
   /**
