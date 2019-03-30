@@ -52,8 +52,8 @@ const MeishaWatch = require('meisha-fe-watch');
 MeishaWatch.init({
   isReport: true, // 是否向后端提交MeishaWatch收集信息，默认为true，可自行检测当前环境，在开发、测试、预发布环境关闭，如：isReport: !/127.0.0.1|192.168|localhost|test-|pre-/.test(window.location.host)
   reportURL: '/path/to/report', // 向后端提交MeishaWatch收集信息的URL(必填，否则无法提交)
-  projectId: 'project id', // 日志系统生成的项目id(已改为项目名称，必填，否则无法提交)
-  partitionId: 'partition id' // 日志系统生成的模块id(已改为日志分区名称，必填，否则无法提交)
+  projectId: 'project id', // 日志系统设置的项目英文名（必填，否则无法提交）
+  partitionId: 'partition id' // 日志系统设置的分区英文名称（必填，否则无法提交)
 });
 ```
 
