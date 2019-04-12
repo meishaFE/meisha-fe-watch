@@ -93,7 +93,7 @@ declare const define: any;
               msg: args.map(v => {
                 return (typeof v === 'object') ? JSON.stringify(decycle(v, undefined)) : v;
               }).join(','),
-              url: window.location.href,
+              url: encodeURIComponent(window.location.href),
               type
             }]];
           }
@@ -117,7 +117,7 @@ declare const define: any;
           if (req.readyState === 4 && req.status >= 400) {
             msw.logs = [...msw.logs, ...[{
               msg: `${method} ${url} ${req.status}`,
-              url: window.location.href,
+              url: encodeURIComponent(window.location.href),
               type: 'error'
             }]];
           }
@@ -138,7 +138,7 @@ declare const define: any;
         }
         this.logs = [...this.logs, ...[{
           msg: errMsg.substr(0, 500),
-          url: window.location.href,
+          url: encodeURIComponent(window.location.href),
           type: 'error',
           line,
           col
@@ -273,7 +273,7 @@ declare const define: any;
               }
               msw.logs = [...msw.logs, ...[{
                 msg: errMsg,
-                url: window.location.href,
+                url: encodeURIComponent(window.location.href),
                 type: 'error'
               }]];
             };

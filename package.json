@@ -1,6 +1,6 @@
 {
   "name": "meisha-fe-watch",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Meisha front-end monitor to report the speed and errors of the web page.",
   "main": "./dist/meisha-watch.js",
   "scripts": {
