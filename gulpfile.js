@@ -8,6 +8,7 @@ const tsProject = ts.createProject('tsconfig.json');
 gulp.task('script', () => {
   return gulp.src('index.ts')
     .pipe(tsProject()).js
+    .pipe(uglify())
     .pipe(rename('meisha-watch.js'))
     .pipe(gulp.dest('dist'))
     .pipe(browserSync.reload({stream: true}));
