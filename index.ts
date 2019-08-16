@@ -29,7 +29,6 @@ declare const define: any;
     isReport: boolean; // 是否上报信息
     reportURL: string; // 接收错误信息接口的URL
     projectId: string; // 项目id
-    partitionId: string; // 模块id
     outTime: Number; // 超时时长
   }
 
@@ -38,8 +37,7 @@ declare const define: any;
       isReport: true,
       reportURL: '',
       projectId: '',
-      outTime: 1000,
-      partitionId: ''
+      outTime: 1000
     }; // 配置选项
     private __logs: object[] = []; // 实际的记录
     private logs: object[]; // 追踪的记录
@@ -47,33 +45,35 @@ declare const define: any;
     private uniqueId: string = geneUniqueId(); // 本次访问的id
     private timer: any = null; // 定时器id
     private reportTimes: number = 0; // 已经上报的次数
-
+    private isFirstReport: boolean = true; // 是否首次上报，只有首次上报会上报performance
     constructor() {
-      if (env.iOS) {
-        Object.defineProperty(this, 'logs', {
-          value: [],
-          configurable: true,
-          enumerable: true,
-          writable: true
-        });
-        Object.defineProperty(this, 'logs', {
-          get() {
-            return this.__logs;
-          },
-          set(value) {
-            this.__logs = value;
-            if (value.length) {
-              this.checkLogs();
-            }
+      Object.defineProperty(this, 'logs', {
+        value: [],
+        configurable: true,
+        enumerable: true,
+        writable: true
+      });
+      Object.defineProperty(this, 'logs', {
+        get() {
+          return this.__logs;
+        },
+        set(value) {
+          this.__logs = value;
+          if (value.length) {
+            this.checkLogs();
           }
-        });
-      } else {
-        this.logs = [];
-      }
+        }
+      });
       this.agentConsole();
       this.agentAJAX();
       this.configSender();
       this.configListener();
+
+      try {
+        let logs = JSON.parse(window.localStorage.getItem('_msLogs'));
+        if (this.isArray(logs)) this.logs = logs;
+      } catch (error) {
+      }
     }
 
     init(settings: Settings): void {
@@ -84,7 +84,7 @@ declare const define: any;
      * 收集console打印的记录
      */
     agentConsole(): void {
-      const methodList: string[] = ['log', 'info', 'warn', 'debug', 'error'];
+      const methodList: string[] = ['error'];
       methodList.forEach(type => {
         const method = console[type];
         console[type] = (...args) => {
@@ -96,6 +96,8 @@ declare const define: any;
               url: encodeURIComponent(window.location.href),
               type
             }]];
+            // 每新增一条log，更新localstorage的_msLogs
+            setLogsToLocalStorage(this.logs);
           }
           method.apply(console, args);
         };
@@ -132,17 +134,19 @@ declare const define: any;
      */
     configListener(): void {
       window.onerror = (msg, url, line, col, error) => {
-        let errMsg: string = msg;
+        let errMsg: any = msg;
         if (error && error.stack) {
           errMsg = processStackMsg(error);
         }
         this.logs = [...this.logs, ...[{
-          msg: errMsg.substr(0, 500),
+          msg: encodeURIComponent(errMsg.substr(0, 500)),
           url: encodeURIComponent(window.location.href),
           type: 'error',
           line,
           col
         }]];
+        // 每新增一条log，更新localstorage的_msLogs
+        setLogsToLocalStorage(this.logs);
       };
     }
 
@@ -150,32 +154,9 @@ declare const define: any;
      * 发送性能和错误信息至后端
      */
     configSender(): void {
-      if (env.iOS) {
-        window.addEventListener('load', () => {
-          setTimeout(() => {
-            this.report(true);
-          }, 1500); // 设置iOS首次报警延时
-        }, false);
-      }
-      window.addEventListener('unload', () => {
-        this.report(false);
+      window.addEventListener('load', () => {
+        this.report(true);
       }, false);
-      if (env.wechat && env.Android) {
-        let hidden = 'hidden';
-        if (hidden in document) {
-          document.addEventListener('visibilitychange', () => {
-            if (document[hidden]) {
-              this.report(false);
-            }
-          }, false);
-        } else if ((hidden = 'webkitHidden') in document) {
-          document.addEventListener('webkitvisibilitychange', () => {
-            if (document[hidden]) {
-              this.report(false);
-            }
-          }, false);
-        }
-      }
     }
 
     /**
@@ -192,9 +173,9 @@ declare const define: any;
      */
     public report(async: boolean = true): void {
       if (this.settings) {
-        let {reportURL, projectId, partitionId, isReport = true, outTime} = this.settings;
+        let {reportURL, projectId, isReport = true, outTime} = this.settings;
         if (isReport && this.reportTimes < 20) {
-          if (reportURL && projectId && partitionId) {
+          if (reportURL && projectId) {
             const performance = window.performance;
             const times = {
                 dns: -1,
@@ -227,23 +208,67 @@ declare const define: any;
             const logs = JSON.stringify(decycle(this.logs.slice(), undefined));
             const httpHost = window.location.host;
             const requestUri = window.location.pathname;
-            this.logs = [];
+            const ua = window.navigator && window.navigator.userAgent;
+            let params: any = {
+              project: projectId,
+              httpHost,
+              requestUri,
+              logs,
+              user,
+              uniqueId: this.uniqueId,
+              ua
+            };
+            if (this.isFirstReport) {
+              params.times = JSON.stringify(times);
+              this.isFirstReport = false;
+            }
             try {
-              AJAX(reportURL, 'POST', {
-                projectId,
-                partitionId,
-                httpHost,
-                requestUri,
-                logs,
-                times: JSON.stringify(times),
-                user,
-                uniqueId: this.uniqueId
-              }, async, () => {
+              AJAX(reportURL, 'POST', params, async, () => {
+                this.logs = [];
+                // 上报后清空当前缓存的_msLogs
+                window.localStorage && window.localStorage.removeItem('_msLogs');
               }, () => {
               }, outTime);
             } catch (e) {
             } finally {
               this.reportTimes++;
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     * 发送请求，错误上报
+     * @param async 是否异步请求
+     */
+    public reportPageTime(pageName: string, pageTime: number): void {
+      if (this.settings) {
+        let {reportURL, projectId, isReport = true} = this.settings;
+        if (isReport) {
+          if (reportURL && projectId) {
+            const user = (isType(this.user, 'Number') || isType(this.user, 'String')) ? this.user : JSON.stringify(this.user);
+            const httpHost = window.location.host;
+            const requestUri = window.location.pathname;
+            const ua = window.navigator && window.navigator.userAgent;
+            const pageParams = JSON.stringify({
+              pageName,
+              pageTime
+            })
+            try {
+              AJAX(reportURL, 'POST', {
+                project: projectId,
+                httpHost,
+                requestUri,
+                user,
+                uniqueId: this.uniqueId,
+                ua,
+                pageParams
+              }, true, () => {
+              }, () => {
+              }, 0);
+            } catch (e) {
+            } finally {
             }
           }
         }
@@ -261,9 +286,7 @@ declare const define: any;
           const ver: string[] = Vue.version && Vue.version.split('.') || [];
           if (+ver[0] >= 2 && +ver[1] >= 2) {
             Vue.config.errorHandler = (err, vm, info) => {
-              if (env.dev) {
-                console.error('[MeishaWatch Console]', err);
-              }
+              console.error('[MeishaWatch Console]', err);
               let errMsg: string = err ? (err.stack ? processStackMsg(err) : err) : '';
               if (info) {
                 errMsg = `[Info: ${info}]->${errMsg}`;
@@ -276,6 +299,8 @@ declare const define: any;
                 url: encodeURIComponent(window.location.href),
                 type: 'error'
               }]];
+              // 每新增一条log，更新localstorage的_msLogs
+              setLogsToLocalStorage(msw.logs);
             };
           }
           if (getQueryString('devtools')) {
@@ -287,11 +312,15 @@ declare const define: any;
 
     checkLogs(): void {
       clearTimeout(this.timer);
-      if (this.logs.length >= 10) {
+      if (this.logs.length >= 5) {
         this.report();
       } else {
         this.timer = setTimeout(this.report, 3000);
       }
+    }
+
+    isArray(o): Boolean {
+      return Object.prototype.toString.call(o).slice(8, -1) === 'Array';
     }
   }
 
@@ -430,7 +459,7 @@ declare const define: any;
           });
         } else {
           newObj = {};
-          Object.keys(value).forEach(key => {
+          Object.getOwnPropertyNames(value).forEach(key => {
             newObj[key] = derez(value[key], path + '[' + key + ']');
           });
         }
@@ -438,6 +467,15 @@ declare const define: any;
       }
       return value;
     }(object, '$'));
+  }
+
+  /**
+   * 将log存储到localStorage中
+   * @param logs
+   */
+
+  function setLogsToLocalStorage(logs: Array<object>): any {
+    window.localStorage && logs.length && window.localStorage.setItem('_msLogs', JSON.stringify(logs));
   }
 
   return new MeishaWatch();
