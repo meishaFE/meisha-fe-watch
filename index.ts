@@ -29,7 +29,6 @@ declare const define: any;
     isReport: boolean; // 是否上报信息
     reportURL: string; // 接收错误信息接口的URL
     projectId: string; // 项目id
-    partitionId: string; // 模块id
     outTime: Number; // 超时时长
   }
 
@@ -38,8 +37,7 @@ declare const define: any;
       isReport: true,
       reportURL: '',
       projectId: '',
-      outTime: 1000,
-      partitionId: ''
+      outTime: 1000
     }; // 配置选项
     private __logs: object[] = []; // 实际的记录
     private logs: object[]; // 追踪的记录
@@ -49,31 +47,39 @@ declare const define: any;
     private reportTimes: number = 0; // 已经上报的次数
 
     constructor() {
-      if (env.iOS) {
-        Object.defineProperty(this, 'logs', {
-          value: [],
-          configurable: true,
-          enumerable: true,
-          writable: true
-        });
-        Object.defineProperty(this, 'logs', {
-          get() {
-            return this.__logs;
-          },
-          set(value) {
-            this.__logs = value;
-            if (value.length) {
-              this.checkLogs();
-            }
+      Object.defineProperty(this, 'logs', {
+        value: [],
+        configurable: true,
+        enumerable: true,
+        writable: true
+      });
+      Object.defineProperty(this, 'logs', {
+        get() {
+          return this.__logs;
+        },
+        set(value) {
+          this.__logs = value;
+          if (value.length) {
+            this.checkLogs();
           }
-        });
-      } else {
-        this.logs = [];
-      }
+        }
+      });
       this.agentConsole();
       this.agentAJAX();
       this.configSender();
       this.configListener();
+
+      try {
+        let logs = JSON.parse(window.localStorage.getItem('msLogs'));
+        window.localStorage.removeItem('msLogs');
+        if (this.isArray(logs)) this.logs = logs;
+      } catch (error) {
+        
+      }
+      // 退出页面前将未上报log存入localstorage
+      window.addEventListener('beforeunload', () => {
+        window.localStorage && window.localStorage.setItem('msLogs', JSON.stringify(this.logs));
+      }, false);
     }
 
     init(settings: Settings): void {
@@ -132,12 +138,12 @@ declare const define: any;
      */
     configListener(): void {
       window.onerror = (msg, url, line, col, error) => {
-        let errMsg: string = msg;
+        let errMsg: any = msg;
         if (error && error.stack) {
           errMsg = processStackMsg(error);
         }
         this.logs = [...this.logs, ...[{
-          msg: errMsg.substr(0, 500),
+          msg: encodeURIComponent(errMsg.substr(0, 500)),
           url: encodeURIComponent(window.location.href),
           type: 'error',
           line,
@@ -157,9 +163,6 @@ declare const define: any;
           }, 1500); // 设置iOS首次报警延时
         }, false);
       }
-      window.addEventListener('unload', () => {
-        this.report(false);
-      }, false);
       if (env.wechat && env.Android) {
         let hidden = 'hidden';
         if (hidden in document) {
@@ -192,9 +195,9 @@ declare const define: any;
      */
     public report(async: boolean = true): void {
       if (this.settings) {
-        let {reportURL, projectId, partitionId, isReport = true, outTime} = this.settings;
+        let {reportURL, projectId, isReport = true, outTime} = this.settings;
         if (isReport && this.reportTimes < 20) {
-          if (reportURL && projectId && partitionId) {
+          if (reportURL && projectId) {
             const performance = window.performance;
             const times = {
                 dns: -1,
@@ -227,23 +230,61 @@ declare const define: any;
             const logs = JSON.stringify(decycle(this.logs.slice(), undefined));
             const httpHost = window.location.host;
             const requestUri = window.location.pathname;
+            const ua = window.navigator && window.navigator.userAgent;
             this.logs = [];
             try {
               AJAX(reportURL, 'POST', {
-                projectId,
-                partitionId,
+                project: projectId,
                 httpHost,
                 requestUri,
                 logs,
                 times: JSON.stringify(times),
                 user,
-                uniqueId: this.uniqueId
+                uniqueId: this.uniqueId,
+                ua
               }, async, () => {
               }, () => {
               }, outTime);
             } catch (e) {
             } finally {
               this.reportTimes++;
+            }
+          }
+        }
+      }
+    }
+
+    /**
+     * 发送请求，错误上报
+     * @param async 是否异步请求
+     */
+    public reportPageTime(pageName: string, pageTime: number): void {
+      if (this.settings) {
+        let {reportURL, projectId, isReport = true} = this.settings;
+        if (isReport) {
+          if (reportURL && projectId) {
+            const user = (isType(this.user, 'Number') || isType(this.user, 'String')) ? this.user : JSON.stringify(this.user);
+            const httpHost = window.location.host;
+            const requestUri = window.location.pathname;
+            const ua = window.navigator && window.navigator.userAgent;
+            const pageParams = JSON.stringify({
+              pageName,
+              pageTime
+            })
+            try {
+              AJAX(reportURL, 'POST', {
+                project: projectId,
+                httpHost,
+                requestUri,
+                user,
+                uniqueId: this.uniqueId,
+                ua,
+                pageParams
+              }, true, () => {
+              }, () => {
+              }, 0);
+            } catch (e) {
+            } finally {
             }
           }
         }
@@ -287,11 +328,15 @@ declare const define: any;
 
     checkLogs(): void {
       clearTimeout(this.timer);
-      if (this.logs.length >= 10) {
+      if (this.logs.length >= 5) {
         this.report();
       } else {
         this.timer = setTimeout(this.report, 3000);
       }
+    }
+
+    isArray(o): Boolean {
+      return Object.prototype.toString.call(o).slice(8, -1) === 'Array';
     }
   }
 
