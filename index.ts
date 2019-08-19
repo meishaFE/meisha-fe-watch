@@ -298,9 +298,7 @@ declare const define: any;
           const ver: string[] = Vue.version && Vue.version.split('.') || [];
           if (+ver[0] >= 2 && +ver[1] >= 2) {
             Vue.config.errorHandler = (err, vm, info) => {
-              if (env.dev) {
-                console.error('[MeishaWatch Console]', err);
-              }
+              console.error('[MeishaWatch Console]', err);
               let errMsg: string = err ? (err.stack ? processStackMsg(err) : err) : '';
               if (info) {
                 errMsg = `[Info: ${info}]->${errMsg}`;
