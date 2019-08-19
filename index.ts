@@ -156,13 +156,9 @@ declare const define: any;
      * 发送性能和错误信息至后端
      */
     configSender(): void {
-      if (env.iOS) {
-        window.addEventListener('load', () => {
-          setTimeout(() => {
-            this.report(true);
-          }, 1500); // 设置iOS首次报警延时
-        }, false);
-      }
+      window.addEventListener('load', () => {
+        this.report(true);
+      }, false);
       if (env.wechat && env.Android) {
         let hidden = 'hidden';
         if (hidden in document) {

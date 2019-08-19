@@ -162,7 +162,7 @@ export default {
 
 4. 上报方式全部改为异步上报的形式，并移除退出系统时的同步上报。
    
-5. 上报时机新增进入系统时获取localStorage的msLogs字段（注意：避免在业务系统中使用到这个localStorage字段），每当log超过5条的时候自动进行日志上报（退出系统前会将当前的存储未上报的log存储到localStorage中）。
+5. 上报时机新增进入系统时先执行一次性能上报，然后获取localStorage的msLogs字段（注意：避免在业务系统中使用到这个localStorage字段），每当log超过5条的时候自动进行日志上报（退出系统前会将当前的存储未上报的log存储到localStorage中）。
 
 
 ## 兼容性
