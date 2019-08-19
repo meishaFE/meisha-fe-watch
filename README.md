@@ -88,6 +88,14 @@ MeishaWatch.setUser(userId); // userId可替换为任一能识别用户身份的
 MeishaWatch.report();
 ```
 
+### 页面性能上报
+
+如果需要主动上报页面设置的埋点耗时，可调用``reportPageTime``方法。
+
+```javascript
+MeishaWatch.reportPageTime(name, time); // name为自定义标签，time为耗时
+```
+
 
 
 ### 使用技巧
@@ -144,13 +152,17 @@ export default {
 
 1. 修复上报数据中url字段带特殊符号的bug
 
-### v1.0.6
+### v1.1.0
 
 1. 新增接口客户端UA字段上报
 
 2. 新增自定义页面性能上报
 
 3. 原配置中的projectId的值改为原有字段partionId的值，并移除字段partitionId
+
+4. 上报方式全部改为异步上报的形式，并移除退出系统时的同步上报。
+   
+5. 上报时机新增进入系统时获取localStorage的msLogs字段（注意：避免在业务系统中使用到这个localStorage字段），每当log超过5条的时候自动进行日志上报（退出系统前会将当前的存储未上报的log存储到localStorage中）。
 
 
 ## 兼容性

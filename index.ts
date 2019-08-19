@@ -168,13 +168,13 @@ declare const define: any;
         if (hidden in document) {
           document.addEventListener('visibilitychange', () => {
             if (document[hidden]) {
-              this.report(false);
+              this.report(true);
             }
           }, false);
         } else if ((hidden = 'webkitHidden') in document) {
           document.addEventListener('webkitvisibilitychange', () => {
             if (document[hidden]) {
-              this.report(false);
+              this.report(true);
             }
           }, false);
         }
