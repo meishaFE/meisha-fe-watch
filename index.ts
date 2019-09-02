@@ -90,7 +90,7 @@ declare const define: any;
      * 收集console打印的记录
      */
     agentConsole(): void {
-      const methodList: string[] = ['log', 'info', 'warn', 'debug', 'error'];
+      const methodList: string[] = ['error'];
       methodList.forEach(type => {
         const method = console[type];
         console[type] = (...args) => {
