@@ -71,7 +71,6 @@ declare const define: any;
 
       try {
         let logs = JSON.parse(window.localStorage.getItem('_msLogs'));
-        window.localStorage.removeItem('_msLogs');
         if (this.isArray(logs)) this.logs = logs;
       } catch (error) {
       }
@@ -210,9 +209,6 @@ declare const define: any;
             const httpHost = window.location.host;
             const requestUri = window.location.pathname;
             const ua = window.navigator && window.navigator.userAgent;
-            this.logs = [];
-            // 上报后清空当前缓存的_msLogs
-            window.localStorage && window.localStorage.removeItem('_msLogs');
             let params: any = {
               project: projectId,
               httpHost,
@@ -228,6 +224,9 @@ declare const define: any;
             }
             try {
               AJAX(reportURL, 'POST', params, async, () => {
+                this.logs = [];
+                // 上报后清空当前缓存的_msLogs
+                window.localStorage && window.localStorage.removeItem('_msLogs');
               }, () => {
               }, outTime);
             } catch (e) {
