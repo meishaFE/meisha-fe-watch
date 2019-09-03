@@ -78,9 +78,13 @@ MeishaWatch.setUser(userId); // userId可替换为任一能识别用户身份的
 
 
 
-### 错误上报
+### 错误上报时机
 
-对于PC端与Android端，``MeishaWatch``默认在页面关闭后上报所有错误信息；在iOS端，因为iOS的Safari（包括在微信中）无法触发``unload``、``beforeunload``和``visibilitychange``等事件，无法在页面关闭前上报，所以会在一段时间内累计错误信息(触发条件：3秒内无增加错误信息||错误已超过10条)后实时上报，并且一个访问最多上报20次，减少了频繁调用上报接口。
+1.进入系统时（进入系统会获取``localStorage``的``_msLogs``字段（注意⚠️：避免在业务系统中用到``localstorage``中的``_msLogs``字段）。
+
+2.当前存储的``log``数大于等于5时。
+
+3.每次捕获到一条错误信息，会同步到``localstorage``；每次执行错误上报，也会同步移除``localstorage``的``_msLogs``字段
 
 ``MeishaWatch``会自动进行错误上报，使用时无需关注细节。如果需要主动上报，可调用``report``方法。
 
@@ -118,6 +122,50 @@ export default {
 
 ## 更新日志
 
+### v1.1.0
+
+1. 新增接口客户端UA字段上报。
+
+2. 新增自定义页面性能上报。
+
+3. 原配置中的``projectId``的值改为原有字段``partionId``的值，并移除字段``partitionId``。
+
+4. 上报方式全部改为异步上报。
+   
+5. 上报时机：
+（1）进入系统时（进入系统会获取``localStorage``的``_msLogs``字段（注意⚠️：避免在业务系统中用到``localstorage``中的``_msLogs``字段）。
+（2）当前存储的``log``数大于等于5时。
+
+6. 取消原有的iOS系统进入页面的初次上报机制
+
+### v1.0.5
+
+1. 修复上报数据中``url``字段带特殊符号上报信息被截断的问题
+
+
+### v1.0.4
+
+1. 优化接口收集的性能信息，如：页面完全加载时间、HTML加载完成时间、首次渲染时间、DOM解析耗时、DNS解析耗时、网络请求耗时、数据传输耗时、首次可交互时间、首包时间、资源加载耗时。
+
+2. 设置iOS的初次上报延迟1.5s
+
+
+### v1.0.3
+
+1. 请求上报添加超时时长参数，默认为1s
+
+
+### v1.0.2
+
+1. 将Android设备错误上报改回同步请求。
+2. 修复对循环引用对象做JSON.stringify操作时``TypeError: Converting circular structure to JSON``的错误。
+
+
+### v1.0.1
+
+1. 修复在部分Android设备微信浏览器中偶现``NetworkError: Failed to execute 'send' on 'XMLHttpRequest'``的错误，将错误上报改为异步请求。
+
+
 ### v1.0.0
 
 1. 新增收集``window.onerror``的错误信息，对于``Vue``，通过``Vue.config.errorHandler``收集；
@@ -127,42 +175,6 @@ export default {
 3. 新增代理``XMLHTTPRequest``，收集AJAX出错信息；
 
 4. 新增通过``performance``接口收集性能信息，如页面加载完成的时间，解析DOM树结构的时间，请求资源的时间。
-
-### v1.0.1
-
-1. 修复在部分Android设备微信浏览器中偶现``NetworkError: Failed to execute 'send' on 'XMLHttpRequest'``的错误，将错误上报改为异步请求。
-
-
-### v1.0.2
-
-1. 将Android设备错误上报改回同步请求。
-2. 修复对循环引用对象做JSON.stringify操作时``TypeError: Converting circular structure to JSON``的错误。
-
-### v1.0.3
-
-1. 请求上报添加超时时长参数，默认为1s
-
-### v1.0.4
-
-1. 优化接口收集的性能信息，如：页面完全加载时间、HTML加载完成时间、首次渲染时间、DOM解析耗时、DNS解析耗时、网络请求耗时、数据传输耗时、首次可交互时间、首包时间、资源加载耗时。
-
-2. 设置iOS的初次上报延迟1.5s
-
-### v1.0.5
-
-1. 修复上报数据中url字段带特殊符号的bug
-
-### v1.1.0
-
-1. 新增接口客户端UA字段上报
-
-2. 新增自定义页面性能上报
-
-3. 原配置中的projectId的值改为原有字段partionId的值，并移除字段partitionId
-
-4. 上报方式全部改为异步上报的形式，并移除退出系统时的同步上报。
-   
-5. 上报时机新增进入系统时先执行一次性能上报，然后获取localStorage的msLogs字段（注意：避免在业务系统中使用到localStorage名为msLogs的key），每当log超过5条的时候自动进行日志上报（退出系统前会将当前的存储未上报的log存储到localStorage中）。
 
 
 ## 兼容性

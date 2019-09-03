@@ -45,7 +45,7 @@ declare const define: any;
     private uniqueId: string = geneUniqueId(); // 本次访问的id
     private timer: any = null; // 定时器id
     private reportTimes: number = 0; // 已经上报的次数
-
+    private isFirstReport: boolean = true; // 是否首次上报，只有首次上报会上报performance
     constructor() {
       Object.defineProperty(this, 'logs', {
         value: [],
@@ -70,16 +70,11 @@ declare const define: any;
       this.configListener();
 
       try {
-        let logs = JSON.parse(window.localStorage.getItem('msLogs'));
-        window.localStorage.removeItem('msLogs');
+        let logs = JSON.parse(window.localStorage.getItem('_msLogs'));
+        window.localStorage.removeItem('_msLogs');
         if (this.isArray(logs)) this.logs = logs;
       } catch (error) {
-        
       }
-      // 退出页面前将未上报log存入localstorage
-      window.addEventListener('beforeunload', () => {
-        window.localStorage && window.localStorage.setItem('msLogs', JSON.stringify(this.logs));
-      }, false);
     }
 
     init(settings: Settings): void {
@@ -102,6 +97,8 @@ declare const define: any;
               url: encodeURIComponent(window.location.href),
               type
             }]];
+            // 每新增一条log，更新localstorage的_msLogs
+            window.localStorage && this.logs.length && window.localStorage.setItem('_msLogs', JSON.stringify(this.logs));
           }
           method.apply(console, args);
         };
@@ -149,6 +146,8 @@ declare const define: any;
           line,
           col
         }]];
+        // 每新增一条log，更新localstorage的_msLogs
+        window.localStorage && this.logs.length && window.localStorage.setItem('_msLogs', JSON.stringify(this.logs));
       };
     }
 
@@ -159,22 +158,6 @@ declare const define: any;
       window.addEventListener('load', () => {
         this.report(true);
       }, false);
-      if (env.wechat && env.Android) {
-        let hidden = 'hidden';
-        if (hidden in document) {
-          document.addEventListener('visibilitychange', () => {
-            if (document[hidden]) {
-              this.report(true);
-            }
-          }, false);
-        } else if ((hidden = 'webkitHidden') in document) {
-          document.addEventListener('webkitvisibilitychange', () => {
-            if (document[hidden]) {
-              this.report(true);
-            }
-          }, false);
-        }
-      }
     }
 
     /**
@@ -228,17 +211,23 @@ declare const define: any;
             const requestUri = window.location.pathname;
             const ua = window.navigator && window.navigator.userAgent;
             this.logs = [];
+            // 上报后清空当前缓存的_msLogs
+            window.localStorage && window.localStorage.removeItem('_msLogs');
+            let params: any = {
+              project: projectId,
+              httpHost,
+              requestUri,
+              logs,
+              user,
+              uniqueId: this.uniqueId,
+              ua
+            };
+            if (this.isFirstReport) {
+              params.times = JSON.stringify(times);
+              this.isFirstReport = false;
+            }
             try {
-              AJAX(reportURL, 'POST', {
-                project: projectId,
-                httpHost,
-                requestUri,
-                logs,
-                times: JSON.stringify(times),
-                user,
-                uniqueId: this.uniqueId,
-                ua
-              }, async, () => {
+              AJAX(reportURL, 'POST', params, async, () => {
               }, () => {
               }, outTime);
             } catch (e) {
@@ -469,7 +458,7 @@ declare const define: any;
           });
         } else {
           newObj = {};
-          Object.keys(value).forEach(key => {
+          Object.getOwnPropertyNames(value).forEach(key => {
             newObj[key] = derez(value[key], path + '[' + key + ']');
           });
         }
