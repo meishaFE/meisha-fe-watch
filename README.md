@@ -132,11 +132,12 @@ export default {
 
 4. 上报方式全部改为异步上报。
    
-5. 上报时机：
-（1）进入系统时（进入系统会获取``localStorage``的``_msLogs``字段（注意⚠️：避免在业务系统中用到``localstorage``中的``_msLogs``字段）。
+5. 上报时机：  
+（1）进入系统时（进入系统会获取``localStorage``的``_msLogs``字段（注意⚠️：避免在业务系统中用到``localstorage``中的``_msLogs``字段）。  
 （2）当前存储的``log``数大于等于5时。
 
 6. 取消原有的iOS系统进入页面的初次上报机制
+
 
 ### v1.0.5
 
@@ -158,6 +159,7 @@ export default {
 ### v1.0.2
 
 1. 将Android设备错误上报改回同步请求。
+
 2. 修复对循环引用对象做JSON.stringify操作时``TypeError: Converting circular structure to JSON``的错误。
 
 
@@ -172,7 +174,7 @@ export default {
 
 2. 新增代理``console``，收集打印的记录；
 
-3. 新增代理``XMLHTTPRequest``，收集AJAX出错信息；
+3. 新增代理``XMLHTTPRequest``，收集AJAX出错信息； 
 
 4. 新增通过``performance``接口收集性能信息，如页面加载完成的时间，解析DOM树结构的时间，请求资源的时间。
 
