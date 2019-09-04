@@ -122,9 +122,15 @@ export default {
 
 ## 更新日志
 
+### v1.1.1
+
+1. 若当前环境的配置属性isReport为false，不执行存储logs到localstorage的操作
+
+
 ### v1.1.0-rc.1
 
 1. 修复部分error未收集到localStorage的bug
+
 
 ### v1.1.0
 
