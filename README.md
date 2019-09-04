@@ -122,6 +122,10 @@ export default {
 
 ## 更新日志
 
+### v1.1.0-rc.1
+
+1. 收集vue errorHandler打印的错误
+
 ### v1.1.0
 
 1. 新增接口客户端UA字段上报。
