@@ -97,7 +97,7 @@ declare const define: any;
               type
             }]];
             // 每新增一条log，更新localstorage的_msLogs
-            setLogsToLocalStorage(this.logs);
+            if (this.settings.isReport) setLogsToLocalStorage(this.logs);
           }
           method.apply(console, args);
         };
@@ -146,7 +146,7 @@ declare const define: any;
           col
         }]];
         // 每新增一条log，更新localstorage的_msLogs
-        setLogsToLocalStorage(this.logs);
+        if (this.settings.isReport) setLogsToLocalStorage(this.logs);
       };
     }
 
@@ -300,7 +300,7 @@ declare const define: any;
                 type: 'error'
               }]];
               // 每新增一条log，更新localstorage的_msLogs
-              setLogsToLocalStorage(msw.logs);
+              if (msw.settings.isReport) setLogsToLocalStorage(msw.logs);
             };
           }
           if (getQueryString('devtools')) {
