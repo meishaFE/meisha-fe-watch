@@ -124,7 +124,7 @@ export default {
 
 ### v1.1.0-rc.1
 
-1. 收集vue errorHandler打印的错误
+1. 修复部分error未收集到localStorage的bug
 
 ### v1.1.0
 
