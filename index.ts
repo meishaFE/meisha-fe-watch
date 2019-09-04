@@ -97,7 +97,7 @@ declare const define: any;
               type
             }]];
             // 每新增一条log，更新localstorage的_msLogs
-            window.localStorage && this.logs.length && window.localStorage.setItem('_msLogs', JSON.stringify(this.logs));
+            setLogsToLocalStorage(this.logs);
           }
           method.apply(console, args);
         };
@@ -146,7 +146,7 @@ declare const define: any;
           col
         }]];
         // 每新增一条log，更新localstorage的_msLogs
-        window.localStorage && this.logs.length && window.localStorage.setItem('_msLogs', JSON.stringify(this.logs));
+        setLogsToLocalStorage(this.logs);
       };
     }
 
@@ -299,6 +299,8 @@ declare const define: any;
                 url: encodeURIComponent(window.location.href),
                 type: 'error'
               }]];
+              // 每新增一条log，更新localstorage的_msLogs
+              setLogsToLocalStorage(msw.logs);
             };
           }
           if (getQueryString('devtools')) {
@@ -465,6 +467,15 @@ declare const define: any;
       }
       return value;
     }(object, '$'));
+  }
+
+  /**
+   * 将log存储到localStorage中
+   * @param logs
+   */
+
+  function setLogsToLocalStorage(logs: Array<object>): any {
+    window.localStorage && logs.length && window.localStorage.setItem('_msLogs', JSON.stringify(logs));
   }
 
   return new MeishaWatch();
