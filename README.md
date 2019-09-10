@@ -122,6 +122,10 @@ export default {
 
 ## 更新日志
 
+### v1.1.2
+
+1. 上报字段``logs``新增``createTime``记录日志生成时间。
+
 ### v1.1.1
 
 1. 若当前环境的配置属性``isReport``为``false``，不执行存储``logs``到``localstorage``的操作。
