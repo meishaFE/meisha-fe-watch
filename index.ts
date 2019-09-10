@@ -94,7 +94,8 @@ declare const define: any;
                 return (typeof v === 'object') ? JSON.stringify(decycle(v, undefined)) : v;
               }).join(','),
               url: encodeURIComponent(window.location.href),
-              type
+              type,
+              createTime: Date.now()
             }]];
             // 每新增一条log，更新localstorage的_msLogs
             if (this.settings.isReport) setLogsToLocalStorage(this.logs);
@@ -143,7 +144,8 @@ declare const define: any;
           url: encodeURIComponent(window.location.href),
           type: 'error',
           line,
-          col
+          col,
+          createTime: Date.now()
         }]];
         // 每新增一条log，更新localstorage的_msLogs
         if (this.settings.isReport) setLogsToLocalStorage(this.logs);
@@ -297,7 +299,8 @@ declare const define: any;
               msw.logs = [...msw.logs, ...[{
                 msg: errMsg,
                 url: encodeURIComponent(window.location.href),
-                type: 'error'
+                type: 'error',
+                createTime: Date.now()
               }]];
               // 每新增一条log，更新localstorage的_msLogs
               if (msw.settings.isReport) setLogsToLocalStorage(msw.logs);
