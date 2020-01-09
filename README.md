@@ -122,6 +122,10 @@ export default {
 
 ## 更新日志
 
+### v1.1.3
+
+1. 修复低版本浏览器``toString``的````bug``。
+
 ### v1.1.2
 
 1. 上报字段``logs``新增``createTime``记录日志生成时间。

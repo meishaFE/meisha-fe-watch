@@ -421,6 +421,7 @@ declare const define: any;
    * @returns {boolean}
    */
   function isType(val: any, type: string): boolean {
+    var toString = Object.prototype.toString;
     if (type === 'Number' && Number.isNaN(val)) {
       return false;
     }
