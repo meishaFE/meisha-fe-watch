@@ -422,7 +422,7 @@ declare const define: any;
    */
   function isType(val: any, type: string): boolean {
     var toString = Object.prototype.toString;
-    if (type === 'Number' && Number.isNaN(val)) {
+    if (type === 'Number' && (val !== val)) {
       return false;
     }
     return toString.call(val).replace(/.*\s(.*)]$/, '$1') === type;
